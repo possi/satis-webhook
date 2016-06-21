@@ -1,0 +1,3 @@
+<Files "config.yml">
+    deny from all
+</Files>
