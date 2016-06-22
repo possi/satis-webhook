@@ -57,7 +57,6 @@ if (null !== $config['user']) {
 }
 
 function execute_build() {
-    error_log("execute_build");
     global $command, $config;
     $process = new Process($command);
     if (isset($config['env']))
@@ -72,7 +71,6 @@ function execute_build() {
         }
     });
 
-    error_log("execute_build done");
     echo "\n\n" . ($exitCode === 0 ? 'Successful rebuild!' : 'Oops! An error occured!') . "\n";
 }
 
