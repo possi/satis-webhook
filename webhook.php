@@ -58,6 +58,31 @@ if (null !== $config['user']) {
 
 function execute_build() {
     global $command, $config;
+    do {
+        $lock_process = fopen($process_file = __DIR__.'/process.lock', "w");
+        if (!flock($lock_process, LOCK_EX | LOCK_NB)) {
+            $lock_wait = fopen($wait_file = __DIR__.'/wait.lock', 'w');
+            if (!flock($lock_wait, LOCK_EX | LOCK_NB)) {
+                fclose($lock_wait);
+                fclose($lock_process);
+                echo "There is already a build-process waiting. Skipping.";
+                return;
+            }
+            echo "There is already a build-process running. Waiting...";
+            if (!flock($lock_process, LOCK_EX)) { // wait
+                echo 'E: Failed to aquire lock';
+                exit(1);
+            }
+            flock($lock_wait, LOCK_UN);
+            unlink($wait_file); 
+            fclose($lock_wait);
+
+            flock($lock_process, LOCK_UN);
+            fclose($lock_process);
+            $lock_process = null;
+        }
+    } while (!$lock_process);
+    fwrite($lock_process, getmypid());
     $process = new Process($command);
     if (isset($config['env']))
         $process->setEnv($config['env']);
@@ -70,6 +95,10 @@ function execute_build() {
             echo '.';
         }
     });
+
+    flock($lock_process, LOCK_UN);
+    unlink($process_file);
+    fclose($lock_process);
 
     echo "\n\n" . ($exitCode === 0 ? 'Successful rebuild!' : 'Oops! An error occured!') . "\n";
 }
