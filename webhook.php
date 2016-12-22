@@ -29,6 +29,12 @@ if ($config['token']) {
     }
 }
 
+$repositoryUrl = null;
+$gitData = Yaml::parse(file_get_contents('php://input'));
+if (is_array($gitData) && isset($gitData['project'], $gitData['project']['git_ssh_url'])) {
+    $repositoryUrl = $gitData['project']['git_ssh_url'];
+}
+
 $errors = array();
 if (!file_exists($config['bin'])) {
     $errors[] = 'The Satis bin could not be found.';
@@ -54,6 +60,10 @@ if (!empty($errors)) {
 $command = sprintf('%s %s build %s %s', $config['bin'], $config['options'], $config['json'], $config['webroot']);
 if (null !== $config['user']) {
     $command = sprintf('sudo -u %s -i %s', $config['user'], $command);
+}
+
+if (null !== $repositoryUrl) {
+    $command .= ' --repository-url=' . escapeshellarg($repositoryUrl);
 }
 
 function execute_build() {
